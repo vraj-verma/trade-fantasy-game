@@ -1,13 +1,15 @@
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { SignupDTO } from './dto/signup.dto';
 import { ClientProxy } from '@nestjs/microservices';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Users } from '../models/users.model';
 
 @Injectable()
 export class AuthService {
 
     constructor(
-        @Inject('MYSQL_CONNECTION') private db: mysql.Connection,
+        @InjectRepository(Users) private db: Repository<Users>,
         @Inject('RABBITMQ_SERVICE') private rabbitClient: ClientProxy
     ) { }
 
@@ -15,7 +17,7 @@ export class AuthService {
         try {
             const sqlQuerry = `INSERT INTO users(name, email, password, phone, country, userType) 
             VALUES(?, ?, ?, ?, ?, ?)`;
-            const [response] = await this.db.query<ResultSetHeader>(sqlQuerry,
+            const response = await this.db.query(sqlQuerry,
                 [
                     payload.name,
                     payload.email,
@@ -38,9 +40,9 @@ export class AuthService {
 
     async getByEmail(email: string) {
         try {
-            const sqlQuery = `SELECT userId, name, email, password, status, userType FROM users
+            const sqlQuery = `SELECT userId, name, email, password, status, userType, sessionId FROM users
             WHERE email = ?`;
-            const [response] = await this.db.query<RowDataPacket[]>(sqlQuery, email);
+            const response = await this.db.query(sqlQuery, [email]);
 
             return response && response.length > 0 ? response[0] : null;
         } catch (error) {
@@ -54,12 +56,37 @@ export class AuthService {
         try {
             const sqlQuery = `SELECT userId, name, email, password, status FROM users
             WHERE userId = ?`;
-            const [response] = await this.db.query<RowDataPacket[]>(sqlQuery, userId);
+            const response = await this.db.query(sqlQuery, [userId]);
 
             return response && response.length > 0 ? response[0] : null;
         } catch (error) {
             console.error('Failed to fetch user by userId ❌', error)
             throw new HttpException('Failed to fetch user by userId', HttpStatus.NOT_IMPLEMENTED);
+        }
+    }
+
+    async setSession(email: string, sessionId: string) {
+        try {
+            const sqlQuery = `UPDATE users SET sessionId = ? WHERE email = ?`;
+            const response = await this.db.query(sqlQuery, [sessionId, email]);
+
+            return response ? response : null;
+        } catch (error) {
+            console.error('Failed to update seesion ❌', error)
+            throw new HttpException('Failed to update seesion', HttpStatus.NOT_IMPLEMENTED);
+        }
+    }
+
+    async removeSession(email: string) {
+        try {
+            const sqlQuerry = 'UPDATE users SET sessionId = null WHERE email = ?';
+
+            const response = await this.db.query(sqlQuerry, [email]);
+
+            return response ? response : null;
+        } catch (error) {
+            console.error('Failed to remove seesion ❌', error)
+            throw new HttpException('Failed to remove seesion', HttpStatus.NOT_IMPLEMENTED);
         }
     }
 

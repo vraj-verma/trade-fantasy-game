@@ -32,7 +32,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
         const email = payload.email;
 
-        const user = await this.authService.getByEmail(email);
+        const user = await this.authService.getByEmail(email); // can cache here and reduce yhe db calls
 
         if (!user) {
             throw new HttpException(
@@ -41,14 +41,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             );
         }
 
-        console.log(user,'8**********')
-
-        if(user.userType !== USER_TYPE.COMMENTATOR){
-            throw new HttpException(
-                `Player can not add game data`,
-                HttpStatus.FORBIDDEN
-            );
-        }
+        // if (user.userType !== USER_TYPE.COMMENTATOR) {
+        //     throw new HttpException(
+        //         `Player can not add game data`,
+        //         HttpStatus.FORBIDDEN
+        //     );
+        // }
 
         if (user.status !== 1) {
             throw new HttpException(

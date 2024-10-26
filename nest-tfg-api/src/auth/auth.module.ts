@@ -5,6 +5,7 @@ import { MysqlModule } from '../config/db/sql/mysql.module';
 import { Utility } from '../helper/util';
 import { JwtStrategy } from '../guards/jwt.strategy';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { Users } from '../models/users.model';
 
 
 

@@ -1,19 +1,21 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
-import mysql, { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { MatchDTO } from './dto/match.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Users } from '../models/users.model';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class MatchesService {
 
     constructor(
-        @Inject('MYSQL_CONNECTION') private db: mysql.Connection,
+        @InjectRepository(Users) private db:  Repository<Users>,
     ) { }
 
     async createMatch(payload: MatchDTO) {
         try {
             const sqlQuerry = `INSERT INTO matches(teamA, teamB) 
             VALUES(?, ?)`;
-            const [response] = await this.db.query<ResultSetHeader>(sqlQuerry,
+            const [response] = await this.db.query(sqlQuerry,
                 [
                     payload.teamA,
                     payload.teamB,
@@ -31,7 +33,7 @@ export class MatchesService {
     async getMatchById(matchId: number) {
         try {
             const sqlQuery = `SELECT teamA, teamB FROM matches WHERE matchId = ?`;
-            const [response] = await this.db.query<RowDataPacket[]>(sqlQuery, [matchId]);
+            const [response] = await this.db.query(sqlQuery, [matchId]);
 
             return response && response.length > 0 ? response[0] : null;
         } catch (error) {
